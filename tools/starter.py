@@ -1,27 +1,28 @@
 import whisper
 import torch
-from whisperllm import llama_resp, transcribe_long_audio_with_timestamps
-from inference import run_inference
-# from langchain_ollama import ChatOllama
-# from langchain_core.prompts import PromptTemplate 
+from ultralytics import YOLO
+from tools.whisperllm import llama_resp
+from tools.inference import run_inference
+from tools.video_cut import parse_timings, crop_video_to_key_object
 
-video_path = 'D:/r2/tiktok.mp4'
-query_text = 'most viral moments more than 10 seconds'
+def start_program(video_path, query_text):
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+    model = whisper.load_model("medium", device=device)
+    audio = whisper.load_audio(video_path)
 
+    res_highlights = run_inference(video_path, query_text)
+    print(res_highlights)
 
-model = whisper.load_model("medium", device=device)
-audio = whisper.load_audio(video_path)
+    print("Запуск LLM модели")
+    res_llama = llama_resp(audio, model, device, res_highlights, video_path)
+    print("Модель отработала")
+    print(res_llama)
 
-res_highlights = run_inference(video_path, query_text)
-print("Запуск LLM модели")
-res_llama = llama_resp(audio, model, device)
-print("Модель отработала")
+    model_yolo = YOLO('yolov8s.pt') 
+    model_yolo.to('cpu')
 
-print(res_highlights)
-print()
-print(res_llama)
-
-
-
+    timings = parse_timings(res_llama)
+    for i, (start, end) in enumerate(timings):
+        output_file = f"output_video_{i + 1}.mp4" 
+        crop_video_to_key_object(video_path, output_file, start, end, model_yolo)

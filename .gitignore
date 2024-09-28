@@ -9,3 +9,7 @@ __pycache__/
 /work_dirs
 .DS_Store
 ._*
+
+*.pt
+audio
+test.py
