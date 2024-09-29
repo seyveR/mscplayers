@@ -17,14 +17,12 @@ def transcribe_segments_with_timestamps(audio, model, timings):
         start_sample = int(start_time * whisper.audio.SAMPLE_RATE)
         end_sample = int(end_time * whisper.audio.SAMPLE_RATE)
 
-        # Извлечение отрывка аудио
         audio_segment = audio[start_sample:end_sample]
         audio_segment = whisper.pad_or_trim(audio_segment)
 
-        # Транскрибирование отрывка
         result = model.transcribe(audio_segment)
         text = result['text']
-        transcription_with_timestamps.append(f"{text} [{start_time:.2f}-{end_time:.2f}]")
+        transcription_with_timestamps.append(f"[{start_time:.2f}-{end_time:.2f}] {text}")
 
     return transcription_with_timestamps
 
@@ -37,24 +35,86 @@ def llama_resp(audio, model, device, highlights, video_path):
     # extract_audio_segments(video_path, transcribed_text)
 
     prompt_template = PromptTemplate.from_template(
-        """У меня есть транскрипт с ключевыми моментами из видео, и я хочу, чтобы ты описал в 3-5 словах каждый фрагмент отдельно. 
-Пожалуйста, не добавляй никаких ненужных пояснений или отказов в ответах. Начало и конец фрагментов бери из транскрипции.
-
+        """У меня есть транскрипт с ключевыми моментами из видео, и я хочу, чтобы ты описал в 3-5 словах каждый фрагмент отдельно (почему он был выбран).
+Таких фрагментов должно быть несколько.
 Вот транскрипт:
 {script}
 
-Ответ должен быть только в следующем формате: [началофрагмента-конецфрагмента] - аннотация (3-5 слов).
-Обработай все фрагменты скрипта обязательно!
+Ответ должен быть только в следующем формате: [началофрагмента-конецфрагмента] - краткое обоснование виральности (3-5 слов).
 """)
 
     script = transcribed_text
-
     print(prompt_template.format(script=script))
 
-    chat = ChatOllama(model='dolphin-llama3', device=device, temperature=0.4)
-
+    # Первая модель
+    chat = ChatOllama(model='dolphin-llama3', device=device, temperature=0.6)
     chain = prompt_template | chat
 
-    result = chain.invoke({'script': script})
+    # Вторая модель для оценки
+    evaluation_template = PromptTemplate.from_template(
+        """Посмотри на пример аннотации, он должен быть выполнен в таком стиле: [началофрагмента-конецфрагмента] - краткое обоснование виральности (3-5 слов).
+Аннотация:
+{annotation}
 
-    return result.content
+Ответь "корректно", если аннотация правильная, или "некорректно", если требуется исправление.
+""")
+    evaluator = ChatOllama(model='dolphin-llama3', device=device, temperature=0.2)  
+
+    chunks = []
+    for chunk in chain.stream({'script': script}):
+        chunks.append(chunk.content)
+        print(chunk.content, end="", flush=True)
+    result = ''.join(chunks)
+    print()
+
+    max_attempts = 10 
+    attempts = 0
+
+    while attempts < max_attempts:
+        evaluation_result = evaluation_template | evaluator
+        # evaluation = evaluation_result.invoke({'annotation': result.content})
+
+        eval_chunks = []
+        for chunk in evaluation_result.stream({'annotation': result}):
+            eval_chunks.append(chunk.content)
+            print(chunk.content, end="", flush=True)
+        evaluation = ''.join(eval_chunks)
+        print()
+
+        if "корректно" in evaluation.lower():
+            print("Ответ корректен.")   
+            break 
+        else:
+            print("Ответ некорректен, перегенерация...")
+            chunks = []
+            for chunk in chain.stream({'script': script}):
+                chunks.append(chunk.content)
+                print(chunk.content, end="", flush=True)
+            result = ''.join(chunks)
+            attempts += 1
+            print()
+
+#     hashtag = PromptTemplate.from_template(
+#         """У меня есть транскрипт с ключевыми моментами из видео, и я хочу, чтобы ты сгенерировал по 4 хэштэга для каждого фрагмента.
+# Транскрипт:
+# {script}
+
+# Ответ должен содержать только хэштеги и ничего кроме.
+# """)
+
+#     script = transcribed_text
+#     print(hashtag.format(script=result))
+
+#     # Первая модель
+#     chat = ChatOllama(model='dolphin-llama3', device=device, temperature=0.3)
+#     chain = prompt_template | chat
+
+#     tags = []
+#     for chunk in chain.stream({'script': result}):
+#         tags.append(chunk.content)
+#         print(chunk.content, end="", flush=True)
+#     tag_res = ''.join(tags)
+#     print()
+
+    return result
+
