@@ -1,0 +1,220 @@
+
+
+
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Index{% endblock %}
+{% block head %}
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <style type="text/css">
+        .important { color: #336699; }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="video-content-wrapper">
+    <h1 id='status_text'>Делаем контент...</h1>
+    <img src="{% static 'img/loading1.gif' %}" id='img' height="72" width="72"/>
+
+    <ul id='messages'></ul>
+
+    <div class="video-section" style="display: none;">
+        <!-- Видео -->
+        <div class="video-block">
+            <video controls autoplay loop muted class="custom-video-player" id="main-video">
+                <!-- Первое видео -->
+                <source src="{% static 'video/video_1.MP4' %}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+
+        <!-- Описание -->
+        <div class="description-block">
+            <h2>#01</h2>
+            <h3>Описание основного видео</h3>
+            <p>33 сек | 720p | Сделано для Rutube</p>
+
+            <div class="custom-hashtags">
+                <span id="hash_1">#GOLFLIFE</span>
+                <span id="hash_2">#GOLFCOMMUNITY</span>
+            </div>
+
+            <!-- Превьюшки -->
+            <div class="custom-thumbnails" id="thumbnails-container">
+                <!-- Превьюшки тестовых видео -->
+                {% comment %} <video src="{% static 'video/video_3.MP4' %}" alt="Превью 1" class="thumbnail"></video>
+                <video src="{% static 'video/video_4.MP4' %}" alt="Превью 2" class="thumbnail"></video>
+                <video src="{% static 'video/video_5.MP4' %}" alt="Превью 3" class="thumbnail"></video> {% endcomment %}
+            </div>
+
+            <!-- Кнопки -->
+            <div class="custom-buttons">
+                <button class="custom-btn edit">Изменить</button>
+                <button class="custom-btn custom-share">Поделиться</button>
+                <button class="custom-btn custom-download" onclick="downloadVideo()">
+                    <img src="{% static 'img/download.png' %}" alt="Скачать">
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/axios.min.js' %}" type="text/javascript"></script>
+
+<script type="text/javascript">
+<!--    document.addEventListener('DOMContentLoaded', function() {-->
+<!--        preloader(true);  // Включаем прелодер при загрузке страницы-->
+<!--        -->
+<!--        // Для временной подгрузки видео из папки-->
+<!--        const videoSources = [-->
+<!--            "{% static 'video/video_1.MP4' %}",-->
+<!--            "{% static 'video/video_2.MP4' %}",-->
+<!--            "{% static 'video/video_3.MP4' %}",-->
+<!--            "{% static 'video/video_5.MP4' %}"-->
+<!--        ];-->
+
+<!--        // Эмуляция успешного получения данных-->
+<!--        setTimeout(() => {-->
+<!--            renderData({data: JSON.stringify(videoSources)});-->
+<!--        }, 1000);  // Задержка для демонстрации прелодера-->
+<!--    });-->
+            var ws = new WebSocket("ws://localhost:8000/{{ video_link }}/ws");
+            var flag_end = false;
+            ws.addEventListener("message", (event) => {
+                    if (flag_end) {
+                        console.log(event.data);
+                        renderData({data: event.data});
+
+                    } else {
+                    var messages = document.getElementById('messages')
+                    var message = document.createElement('li')
+                    var content = document.createTextNode(event.data)
+                    message.appendChild(content)
+                    messages.appendChild(message) }
+                    if ("Завершение" == event.data) {
+                         flag_end = true
+                    }
+            });
+
+    function renderData(res) {
+        const videoList = JSON.parse(res.data);
+
+        // Первое видео для основного блока
+        const mainVideoElement = document.getElementById('main-video');
+        const mainVideoSource = mainVideoElement.querySelector('source');
+        mainVideoSource.src = videoList[0];
+        mainVideoElement.load();
+
+        // Превьюшки
+        const thumbnailsContainer = document.getElementById('thumbnails-container');
+        thumbnailsContainer.innerHTML = '';  // Очищаем старые превьюшки
+
+        videoList.slice(1).forEach((videoSrc, index) => {
+            const thumbnail = document.createElement('video');
+            thumbnail.src = videoSrc;
+            thumbnail.alt = `Превью ${index + 1}`;
+            thumbnail.className = 'thumbnail';
+            thumbnail.muted = true;
+            thumbnail.controls = false; 
+            thumbnail.loop = true;
+            thumbnail.style.width = '90px';
+            thumbnail.style.height = '160px';
+            thumbnail.addEventListener('click', function() {
+                switchVideo(videoSrc);
+            });
+            thumbnailsContainer.appendChild(thumbnail);
+        });
+
+        // Убираем прелодер и отображаем основной контент
+        preloader(false);
+        document.getElementById('status_text').style.display = 'none';
+        document.getElementById('messages').style.display = 'none';
+        document.querySelector('.video-section').style.display = 'flex';
+    }
+    hashtags = [
+        "#КороткиеВидео",
+        "#Тренды",
+        "#Вирусное",
+        "#Забавное",
+        "#Вдохновение",
+        "#Мотивация",
+        "#Мода",
+        "#Shorts",
+        "#TikTok",
+        "#Viral",
+        "#Trending",
+        "#ForYou",
+        "#Inspiration",
+        "#Motivation",
+        "#Fashion",
+        "#Creative"
+    ]
+
+    function getRandomInt(max) {
+      return Math.floor(Math.random() * max);
+    }
+
+    function getHashTag() {
+        document.getElementById('hash_1').textContent = hashtags[getRandomInt(16)];
+        document.getElementById('hash_2').textContent = hashtags[getRandomInt(16)];
+    }
+    getHashTag()
+
+    function switchVideo(newVideoSrc) {
+        const mainVideoElement = document.getElementById('main-video');
+        const mainVideoSource = mainVideoElement.querySelector('source');
+        const thumbnailsContainer = document.getElementById('thumbnails-container');
+    
+        // найдем текущее главное видео в превью
+        const oldVideoSrc = mainVideoSource.src;
+        let existingThumbnail = Array.from(thumbnailsContainer.children).find(thumbnail => thumbnail.src === oldVideoSrc);
+    
+        // если есть старое видео в превью, заменим его на новое
+        if (existingThumbnail) {
+            existingThumbnail.src = oldVideoSrc;
+        } else {
+            // создаем новое превью только если его не было
+            const newThumbnail = document.createElement('video');
+            newThumbnail.src = oldVideoSrc;
+            newThumbnail.className = 'thumbnail';
+            newThumbnail.muted = true;
+            newThumbnail.loop = true;
+            newThumbnail.controls = false;
+            newThumbnail.style.width = '90px';
+            newThumbnail.style.height = '160px';
+            newThumbnail.addEventListener('click', function() {
+                switchVideo(newThumbnail.src);
+            });
+    
+            thumbnailsContainer.appendChild(newThumbnail);
+        }
+    
+        
+        mainVideoSource.src = newVideoSrc;
+        mainVideoElement.load();
+    }
+    
+    function preloader(flag) {
+        const img = document.querySelector('#img');
+        if (flag) {
+            img.style.display = 'block';
+        } else {
+            img.style.display = 'none';
+        }
+    }
+
+    function downloadVideo() {
+        const mainVideoSrc = document.querySelector('#main-video source').src;
+        const a = document.createElement('a');
+        a.href = mainVideoSrc;
+        a.download = 'video.mp4';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+</script>
+
+
+
+{% endblock %}

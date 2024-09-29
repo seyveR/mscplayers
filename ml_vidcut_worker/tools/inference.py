@@ -10,7 +10,7 @@ from nncore.nn import build_model
 from tabulate import tabulate
 
 CONFIG = 'configs/qvhighlights/r2_tuning_qvhighlights.py'
-WEIGHT = 'D:/r2/R2-Tuning/checkpoints/r2_tuning_qvhighlights-ed516355.pth'
+WEIGHT = 'configs/r2models/r2_tuning_qvhighlights-ed516355.pth'
 
 
 def load_video(video_path, cfg, device):

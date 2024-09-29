@@ -1,0 +1,5 @@
+venv 
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+pip install -r requirements.txt
+pip install -r ml_vidcut_worker/requirements.txt
+django manage.py runserver

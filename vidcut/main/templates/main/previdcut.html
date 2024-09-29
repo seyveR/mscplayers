@@ -1,0 +1,35 @@
+
+
+
+
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Index{% endblock %}
+{% block head %}
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <style type="text/css">
+        .important { color: #336699; }
+
+        
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="content-center">
+    {% if link_static_video %}
+    <form method="POST" action="{% url 'models_start_cutting' %}" class="form large-form">
+        {% csrf_token %}
+        
+
+        <video id="videoPreview" width="100%" height="auto" controls poster="{% static 'img/video_poster.png' %}">
+            <source src="{% static link_static_video %}" type="video/mp4">
+            Ваш браузер не поддерживает просмотр видео.
+        </video>
+        
+        <input class="form-control" type="hidden" id="video_link" name="video_link" required value="{% static link_static_video %}">
+        <button type="submit" class="btn btn-primary">Получить клипы</button>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% block head %}
+    {% load bootstrap5 %}
+    {% bootstrap_css %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <!-- Подключаем шрифт Merriweather -->
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+
+    {% bootstrap_javascript %}
+    <title>{% block title %}{% endblock %} - My Webpage</title>
+    {% endblock %}
+</head>
+<body>
+    <div class="logo-container">
+        <img src="{% static 'img/logo.svg' %}" alt="Logo" class="logo">
+    </div>
+    
+
+    <div id="content">{% block content %}{% endblock %}</div>
+
+    <div class="footer-text">
+        PLAYERS 2024
+    </div>
+</body>
+</html>
